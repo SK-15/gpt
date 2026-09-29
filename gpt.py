@@ -1,3 +1,7 @@
+import os
+import time
+from datetime import datetime
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -16,6 +20,9 @@ n_layer = 6
 dropout = 0.2
 # ------------
 
+# outputs: output/<YYYY-MM-DD>/{train_loss.csv, eval_loss.csv, sample.txt}
+out_dir = os.path.join('output', datetime.now().strftime('%Y-%m-%d'))
+os.makedirs(out_dir, exist_ok=True)
 
 torch.manual_seed(1337)
 
@@ -200,12 +207,20 @@ print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
 # create a PyTorch optimizer
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
+train_log = open(os.path.join(out_dir, 'train_loss.csv'), 'w')
+train_log.write('step,loss\n')
+eval_log = open(os.path.join(out_dir, 'eval_loss.csv'), 'w')
+eval_log.write('step,train_loss,val_loss,elapsed_sec\n')
+start = time.time()
+
 for iter in range(max_iters):
 
     # every once in a while evaluate the loss on train and val sets
     if iter % eval_interval == 0 or iter == max_iters - 1:
         losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}", flush=True)
+        eval_log.write(f"{iter},{losses['train']:.4f},{losses['val']:.4f},{time.time()-start:.1f}\n")
+        eval_log.flush()
 
     # sample a batch of data
     xb, yb = get_batch('train')
@@ -215,10 +230,19 @@ for iter in range(max_iters):
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
+    train_log.write(f'{iter},{loss.item():.4f}\n')
+    if iter % 100 == 0:
+        train_log.flush()
+
+train_log.close()
+eval_log.close()
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+sample = decode(m.generate(context, max_new_tokens=500)[0].tolist())
+print(sample)
+with open(os.path.join(out_dir, 'sample.txt'), 'w', encoding='utf-8') as f:
+    f.write(sample)
 #open('more.txt', 'w').write(decode(m.generate(context, max_new_tokens=10000)[0].tolist()))
 
 

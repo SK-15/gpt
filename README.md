@@ -110,12 +110,42 @@ python gpt.py         # full model, needs a GPU
 | Model | Params | Val loss |
 |---|---|---|
 | Bigram (`bigram.py`) | ~4K | _TBD_ |
-| GPT (`gpt.py`) | 10.8M | _TBD_ |
+| GPT (`gpt.py`) | 10.8M | **1.49** (best, step 3000) / 1.57 (final) |
+
+Training took **~38 min** on an RTX 4050 Laptop GPU (6 GB), peaking at 3.4 GiB VRAM.
+
+| Step | Train loss | Val loss |
+|---|---|---|
+| 0 | 4.157 | 4.159 |
+| 500 | 1.711 | 1.873 |
+| 1000 | 1.396 | 1.612 |
+| 2000 | 1.186 | 1.511 |
+| 3000 | 1.070 | **1.492** |
+| 4000 | 0.959 | 1.514 |
+| 4999 | 0.855 | 1.571 |
+
+Val loss bottoms out around step 3000 and then climbs while train loss keeps falling, which is **overfitting** on a 1.1M-character dataset. Early stopping or more dropout would fix it.
+
+Per-step losses, eval losses and the generated sample for each run are saved to `output/<date>/`.
 
 **Sample output** (500 characters generated from an empty context):
 
 ```
-<paste generated text here after training>
+haird is nothing; but here is not find for the ses
+of the pledge, for his valiant to come.
+
+FLORIZEL:
+I do bring your mother; thither can affliction,
+is your partnency of your bearts, shall assure
+You want characts reason to the part be or oath.
+
+Third Camillo,
+And well you so greatly but a fair of love
+She moves between you us. Beseech you, my lord,
+You, these hath a queen'ved sit you to,
+Be you shortly tell you of yourself,
+Please, and then you for our pleasure, that provost
+Mistrust be young,
 ```
 
 ---
