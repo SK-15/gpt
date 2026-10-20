@@ -22,15 +22,6 @@ n_layer = 6
 dropout = 0.2
 # ------------
 
-# outputs: output/<YYYY-MM-DD>/{train_loss.csv, eval_loss.csv, sample.txt}
-out_dir = os.path.join('output', datetime.now().strftime('%Y-%m-%d'))
-os.makedirs(out_dir, exist_ok=True)
-
-torch.manual_seed(1337)
-
-train_data = np.memmap('data/train.bin', dtype=np.uint16, mode='r')
-val_data = np.memmap('data/val.bin', dtype=np.uint16, mode='r')
-
 # data loading
 def get_batch(split):
     # generate a small batch of data of inputs x and targets y
@@ -56,32 +47,6 @@ def estimate_loss():
     model.train()
     return out
 
-class Head(nn.Module):
-    """Single head of self attention"""
-
-    def __init__(self, head_size):
-        super().__init__()
-        self.query = nn.Linear(n_embd,head_size,bias=False)
-        self.value = nn.Linear(n_embd,head_size,bias=False)
-        self.key = nn.Linear(n_embd,head_size,bias=False)
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self,x):
-
-        B,T,C = x.shape
-        k = self.key(x)
-        q = self.query(x)
-
-        wei = q@k.transpose(-2,-1) * k.shape[-1]**-0.5 # Q Mutl K(transpose) X Scale (sqrt(d)), (B, T, hs) @ (B, hs, T) -> (B, T, T)
-        wei = wei.masked_fill(self.tril[:T,:T] == 0, float("-inf"))
-        wei = F.softmax(wei,dim=-1)
-        wei = self.dropout(wei)
-
-        v = self.value(x)
-        out = wei@v
-
-        return out
 
 class MultiHeadAttention(nn.Module):
 
@@ -104,11 +69,7 @@ class MultiHeadAttention(nn.Module):
         out = F.scaled_dot_product_attention(q,k,v, is_causal=True,
                                              dropout_p=dropout if self.training else 0.0)
         out = out.transpose(1, 2).contiguous().view(B, T, C)  # concat heads back
-        return self.dropout(self.proj(out))
-
-        # out = torch.cat([h(x) for h in self.heads], dim=-1)
-        # out = self.dropout(self.proj(out))
-        # return out 
+        return self.dropout(self.proj(out)) 
 
 class FeedForward(nn.Module):
 
