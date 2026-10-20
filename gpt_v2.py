@@ -9,10 +9,10 @@ import numpy as np
 from tokenizer import vocab_size
 
 # hyperparameters
-batch_size = 32 # how many independent sequences will we process in parallel?
+batch_size = 16 # how many independent sequences will we process in parallel?
 block_size = 256 # what is the maximum context length for predictions?
-max_iters = 5000
-eval_interval = 500
+max_iters = 50000
+eval_interval = 2500
 learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 50
