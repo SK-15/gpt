@@ -5,3 +5,4 @@ output/
 data/TinyStories*
 data/*.bin
 data
+doc/
